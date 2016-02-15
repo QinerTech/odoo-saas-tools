@@ -197,21 +197,6 @@ class SaasPortalPlan(models.Model):
     @api.multi
     def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False, trial=False, support_team_id=None, async=None):
         self.ensure_one()
-        if not trial and self.maximum_allowed_dbs_per_partner != 0:
-            db_count = self.env['saas_portal.client'].search_count([('partner_id', '=', partner_id),
-                                                                    ('state', '=', 'open'),
-                                                                    ('plan_id', '=', self.id),
-                                                                    ('trial', '=', False)])
-            if db_count >= self.maximum_allowed_dbs_per_partner:
-                raise MaximumDBException("Limit of databases for this plan is %(maximum)s reached" % {'maximum': self.nmaximum_allowed_dbs_per_partner})
-        if trial and self.maximum_allowed_trial_dbs_per_partner != 0:
-            trial_db_count = self.env['saas_portal.client'].search_count([('partner_id', '=', partner_id),
-                                                                          ('state', '=', 'open'),
-                                                                          ('plan_id', '=', self.id),
-                                                                          ('trial', '=', True)])
-            if trial_db_count >= self.maximum_allowed_trial_dbs_per_partner:
-                raise MaximumTrialDBException("Limit of trial databases for this plan is %(maximum)s reached" % {'maximum': self.maximum_allowed_trial_dbs_per_partner})
-
 
         server = self.server_id
         if not server:
@@ -221,6 +206,22 @@ class SaasPortalPlan(models.Model):
         if not partner_id and user_id:
             user = self.env['res.users'].browse(user_id)
             partner_id = user.partner_id.id
+
+        if not trial and self.maximum_allowed_dbs_per_partner != 0:
+            db_count = self.env['saas_portal.client'].search_count([('partner_id', '=', partner_id),
+                                                                    ('state', '=', 'open'),
+                                                                    ('plan_id', '=', self.id),
+                                                                    ('trial', '=', False)])
+            if db_count >= self.maximum_allowed_dbs_per_partner:
+                raise MaximumDBException("Limit of databases for this plan is %(maximum)s reached" % {'maximum': self.maximum_allowed_dbs_per_partner})
+        if trial and self.maximum_allowed_trial_dbs_per_partner != 0:
+            trial_db_count = self.env['saas_portal.client'].search_count([('partner_id', '=', partner_id),
+                                                                          ('state', '=', 'open'),
+                                                                          ('plan_id', '=', self.id),
+                                                                          ('trial', '=', True)])
+            if trial_db_count >= self.maximum_allowed_trial_dbs_per_partner:
+                raise MaximumTrialDBException("Limit of trial databases for this plan is %(maximum)s reached" % {'maximum': self.maximum_allowed_trial_dbs_per_partner})
+
 
         vals = {'name': dbname or self.generate_dbname()[0],
                 'server_id': server.id,
