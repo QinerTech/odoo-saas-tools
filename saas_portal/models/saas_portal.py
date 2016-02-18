@@ -111,11 +111,7 @@ class SaasPortalServer(models.Model):
         res = requests.get(url, verify=(self.request_scheme == 'https' and self.verify_ssl))
 
         if res.ok != True:
-            msg = """Status Code - %s
-Reason - %s
-URL - %s
-            """ % (res.status_code, res.reason, res.url)            
-            raise Warning(msg)
+            raise Warning('Reason: %s \n Message: %s' % (res.reason, res.content))
         data = simplejson.loads(res.text)
 
         for r in data:
@@ -335,11 +331,7 @@ class SaasPortalPlan(models.Model):
                                                                       params=werkzeug.url_encode(params))
         res = requests.get(url, verify=(plan.server_id.request_scheme == 'https' and plan.server_id.verify_ssl))
         if res.ok != True:
-            msg = """Status Code - %s
-Reason - %s
-URL - %s
-            """ % (res.status_code, res.reason, res.url)
-            raise Warning(msg)
+            raise Warning('Reason: %s \n Message: %s' % (res.reason, res.content))
         return self.action_sync_server()
 
     @api.multi
@@ -358,7 +350,8 @@ URL - %s
 
     @api.multi
     def delete_template(self):
-        res = self[0].template_id.delete_database()
+        self.ensure_one()
+        res = self.template_id.delete_database_server()
         return res
 
 
@@ -519,7 +512,7 @@ class SaasPortalClient(models.Model):
     @api.model
     def _cron_notify_expired_clients(self):
         # send notification about expiration by email
-        notification_delta = int(self.env['ir.config_parameter'].get_param('saas.expiration_notify_in_advance', '0'))
+        notification_delta = int(self.env['ir.config_parameter'].get_param('saas_portal.expiration_notify_in_advance', '0'))
         if notification_delta > 0:
             records = self.search([('expiration_datetime', '<=', (datetime.now() + timedelta(days=notification_delta)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)),
                                    ('notification_sent', '=', False)])
