@@ -83,11 +83,7 @@ class SaasConfig(models.TransientModel):
         )[0]
         res = requests.get(url, verify=(self.server_id.request_scheme == 'https' and self.server_id.verify_ssl))
         if res.ok != True:
-            msg = """Status Code - %s
-Reason - %s
-URL - %s
-            """ % (res.status_code, res.reason, res.url)
-            raise Warning(msg)
+            raise Warning('Reason: %s \n Message: %s' % (res.reason, res.content))
         return res.text
 
 class SaasConfigFix(models.TransientModel):
@@ -131,9 +127,10 @@ class SaasPortalCreateClient(models.TransientModel):
     user_id = fields.Many2one('res.users', string='User')
     notify_user = fields.Boolean(help='Notify user by email when database will have been created', default=False)
     support_team_id = fields.Many2one('saas_portal.support_team', 'Support Team', default=lambda self: self.env.user.support_team_id)
+    async_creation = fields.Boolean('Asynchronous', default=False, help='Asynchronous creation of client base')
 
     @api.onchange('user_id')
-    def update_parter(self):
+    def update_partner(self):
         if self.user_id:
             self.partner_id = self.user_id.partner_id
 
@@ -142,7 +139,10 @@ class SaasPortalCreateClient(models.TransientModel):
         wizard = self[0]
         res = wizard.plan_id.create_new_database(dbname=wizard.name, partner_id=wizard.partner_id.id, user_id=self.user_id.id,
                                                  notify_user=self.notify_user,
-                                                 support_team_id=self.support_team_id.id)
+                                                 support_team_id=self.support_team_id.id,
+                                                 async=self.async_creation)
+        if self.async_creation:
+            return
         client = self.env['saas_portal.client'].browse(res.get('id'))
         client.server_id.action_sync_server()
         return {
