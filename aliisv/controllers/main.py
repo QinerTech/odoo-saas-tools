@@ -2,6 +2,8 @@
 # coding=utf-8
 
 import openerp
+from openerp import SUPERUSER_ID, exceptions
+from openerp.addons.saas_base.exceptions import MaximumDBException, MaximumTrialDBException
 from openerp.http import request
 from openerp import http
 import re
@@ -16,69 +18,48 @@ domain = '127.0.0.1:8069'
 
 class AliIsv(SaasPortal):
     @http.route('/allisv', type='http', auth="public")
-    def get_url(self, **kw):
+    def get_url(self, **post):
         # get current request url
         url = request.httprequest.url.decode('UTF-8')
 
 #        url = 'http://www.qiner.com.cn/?p1=1&p2=2&p3=3&token=xxxxxx'
         query = urlparse.urlparse(url).query
-        d = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
+        aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
-        prod_id = self.get_prod(d.get('skuId'))
-        plan_id = self.get_plan(prod_id)
-        partner_id = self.get_parnter(d.get('aliUid'))
+        product = request.env['product.template'].sudo().search([('aliskuid', '=', aliparams.get('skuId'))])
+        if not product:
+            #TODO: product not exists
+            return 0
+        plan = product.sudo().plan_id
+        partner = request.env['res.partner'].sudo().search([('aliuid', '=', aliparams.get('aliUid'))])
+        if not partner:
+            #TODO: partner not exists
+            partner.create({'name':'AliUser','user_id':001, 'aliuid':aliparams.get('aliUid')})
 
-        rel= self.add_new_client(partner_id,prod_id,plan_id)
+#        partner_id = partner.id
+        partner_id = 1
+#        user_id = partner.user_id.id
+        user_id = 1
+        support_team = request.env.ref('saas_portal.main_support_team')
 
+        dbname = plan.generate_dbname()
 
-        values = self.get_return()
+        #
+        # if not plan.free_subdomains:
+        #     dbname = self.get_full_dbname(dbname)
 
-        return values
+        try:
+            res = plan.create_new_database(dbname=dbname, user_id=user_id, partner_id=partner_id)
+        except MaximumDBException:
+            url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumdb', '/')
+            return werkzeug.utils.redirect(url)
+        except MaximumTrialDBException:
+            url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumtrialdb', '/')
+            return werkzeug.utils.redirect(url)
 
-    def get_prod(self, skuId=None):
-        #TODO: get product ID by skuId
-        d = {'001':'1', '002':'2'}
-
-        prod_id = d.get(skuId)
-
-        return prod_id
-
-    def get_parnter(self, aliUid):
-        #TODO: check if it's a existing partner or create a new one
-        d = {'001':'1', '002':'2'}
-
-        partner_id = d.get(aliUid)
-
-        return partner_id
-
-    def get_plan(self, prod_id):
-        #TODO: get plan Id from product
-        d = {'001':'1', '002':'2'}
-
-        plan_id = d.get(prod_id)
-
-        return plan_id
-
-    def add_new_client(self, parnter_id, prod_id, plan_id):
-        #TODO: create a new client with params
-        return 1
-
-    def get_return(self):
-        #TODO: encode json and return to ali
-        values = json.dumps({
-                    "instanceId": "1",
-                    "hostInfo": {
-                        "name": "linux server", "ip": "127.0.0.1",
-                        "password": "root_password"
-                            },
-                    "appInfo": {
-                        "frontEndUrl": "http://yourdomain.com/", "adminUrl": "http://yourdomain.com/admin", "username": "admin",
-                        "password": "admin_password"
-                    },
-                    "info": {
-                        "key1": "my custom info"
-                    }
-                })
-        return values
+        return werkzeug.utils.redirect(res.get('url'))
 
 
+##        values = self.get_return()
+
+##        return values

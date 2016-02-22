@@ -3,7 +3,7 @@
 
 
 {
-    'name': 'Ali_isv',
+    'name': 'AliIsv',
     'version': '1.0',
     'category': ' ',
     'summary': '',
@@ -12,11 +12,10 @@
     'description': """
 """,
     'depends': [
-
+        'sale'
     ],
     'data': [
-
-
+        'views/product_template.xml'
     ],
 
     'test': [
