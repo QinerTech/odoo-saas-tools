@@ -1,4 +1,3 @@
-# __author__ = 'gaofeng'
 # coding=utf-8
 
 import openerp
@@ -13,7 +12,7 @@ from werkzeug.wrappers import Request, Response
 from openerp.addons.saas_portal.controllers.main import SaasPortal
 import json
 
-domain = '127.0.0.1:8069'
+domain = 'qiner.com.cn'
 
 
 class AliIsv(SaasPortal):
@@ -32,11 +31,14 @@ class AliIsv(SaasPortal):
             return 0
         plan = product.sudo().plan_id
 
+        ulogin = aliparams.get('email') or aliparams.get('aliUid') + '@' + domain
+        upassword = '1'
+
         user = request.env['res.users'].sudo().search([('aliuid', '=', aliparams.get('aliUid'))])
         if not user:
-           user = request.env['res.users'].sudo().create({'name':'AliUser',
-                                                           'login': aliparams.get('aliUid'),
-                                                           'password': '1',
+           user = request.env['res.users'].sudo().create({'name':aliparams.get('aliUid'),
+                                                           'login': ulogin,
+                                                           'password': upassword,
                                                            'email': aliparams.get('email'),
                                                            'mobile': aliparams.get('mobile'),
                                                            'aliuid':aliparams.get('aliUid'),
@@ -61,6 +63,7 @@ class AliIsv(SaasPortal):
         if not res:
             return None
 
+        hostname = urlparse.urlparse(res.get('url')).hostname
         values = json.dumps({
                 "instanceId": res.get('id'),
                 "hostInfo": {
@@ -70,9 +73,9 @@ class AliIsv(SaasPortal):
                 },
                 "appInfo": {
                     "frontEndUrl": "http://www.qiner.com.cn/",
-                    "adminUrl": res.get('url'),
+                    "adminUrl": 'http://' + hostname,
                     "username": user.login,
-                    "password": '1'
+                    "password": upassword,
                 },
                 "info": {
                     "key1": "my custom info"
@@ -81,4 +84,9 @@ class AliIsv(SaasPortal):
 
         return values
 
-#        return werkzeug.utils.redirect(res.get('url'))
+    def generate_login(self, param=None):
+        if param <> None:
+            login = param + '@' + domain
+
+
+        return login
