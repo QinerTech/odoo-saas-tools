@@ -12,5 +12,4 @@ class ResParnterAliIsv(models.Model):
         index = False,
         size = 50,
         default = None,
-        readonly = True,
     )

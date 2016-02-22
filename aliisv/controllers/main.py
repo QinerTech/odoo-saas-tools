@@ -42,14 +42,9 @@ class AliIsv(SaasPortal):
         user_id = 1
         support_team = request.env.ref('saas_portal.main_support_team')
 
-        dbname = plan.generate_dbname()
-
-        #
-        # if not plan.free_subdomains:
-        #     dbname = self.get_full_dbname(dbname)
-
         try:
-            res = plan.create_new_database(dbname=dbname, user_id=user_id, partner_id=partner_id)
+#            res = plan.create_new_database(dbname=dbname, user_id=user_id, partner_id=partner_id)
+            res = plan.create_new_database(user_id=user_id, partner_id=partner_id)
         except MaximumDBException:
             url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumdb', '/')
             return werkzeug.utils.redirect(url)
@@ -57,9 +52,24 @@ class AliIsv(SaasPortal):
             url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumtrialdb', '/')
             return werkzeug.utils.redirect(url)
 
-        return werkzeug.utils.redirect(res.get('url'))
+        #TODO: encode json and return to ali
+        values = json.dumps({
+                "instanceId": "1",
+                "hostInfo": {
+                    "name": "linux server", "ip": "127.0.0.1",
+                    "password": "root_password"
+                },
+                "appInfo": {
+                    "frontEndUrl": "http://www.qiner.com.cn/",
+                    "adminUrl": "http://www.qiner.om.cn/admin",
+                    "username": "admin",
+                    "password": "admin_password"
+                },
+                "info": {
+                    "key1": "my custom info"
+                }
+            })
 
+        return values
 
-##        values = self.get_return()
-
-##        return values
+#        return werkzeug.utils.redirect(res.get('url'))
