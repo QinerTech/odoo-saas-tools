@@ -12,7 +12,7 @@
     'description': """
 """,
     'depends': [
-        'sale'
+        'sale', 'saas_portal_sale'
     ],
     'data': [
         'views/product_template.xml'
