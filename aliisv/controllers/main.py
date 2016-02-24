@@ -84,9 +84,35 @@ class AliIsv(SaasPortal):
 
         return values
 
+    def creatInstance(self, param=None):
+
+        return 0
+
+    def renewInstance(self, param=None):
+
+        return 0
+
+    def expiredInstance(self, param=None):
+
+        return 0
+
+    def releaseInstance(self, param=None):
+
+        return 0
+
+    def bindDomain(self, param=None):
+
+        return 0
+
     def generate_login(self, param=None):
-        if param <> None:
+        #TODO: check existing user or not
+        if param is not None:
             login = param + '@' + domain
 
-
         return login
+
+    def generate_password(self, user=None):
+        if user is not None:
+            password = '1'
+
+        return password
