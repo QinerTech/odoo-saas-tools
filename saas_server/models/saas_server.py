@@ -171,6 +171,7 @@ class SaasServerClient(models.Model):
                 'login': owner_user['login'],
                 'name': owner_user['name'],
                 'email': owner_user['email'],
+                'password': owner_user['password'],
                 'oauth_provider_id': oauth_provider.id,
                 'oauth_uid': owner_user['user_id'],
                 'oauth_access_token': access_token

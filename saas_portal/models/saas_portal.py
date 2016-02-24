@@ -191,7 +191,7 @@ class SaasPortalPlan(models.Model):
         return self._create_new_database(**kwargs)
 
     @api.multi
-    def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False, trial=False, support_team_id=None, async=None):
+    def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False, trial=False, support_team_id=None, async=None, password=None):
         self.ensure_one()
 
         server = self.server_id
@@ -217,7 +217,6 @@ class SaasPortalPlan(models.Model):
                                                                           ('trial', '=', True)])
             if trial_db_count >= self.maximum_allowed_trial_dbs_per_partner:
                 raise MaximumTrialDBException("Limit of trial databases for this plan is %(maximum)s reached" % {'maximum': self.maximum_allowed_trial_dbs_per_partner})
-
 
         vals = {'name': dbname or self.generate_dbname()[0],
                 'server_id': server.id,
@@ -250,7 +249,9 @@ class SaasPortalPlan(models.Model):
             'login': owner_user.login,
             'name': owner_user.name,
             'email': owner_user.email,
+            'password': password,
         }
+
         trial_expiration_datetime = (datetime.strptime(client.create_date,
                                         DEFAULT_SERVER_DATETIME_FORMAT) + timedelta(hours=self.expiration)).strftime(DEFAULT_SERVER_DATETIME_FORMAT)  # for trial
         state = {
