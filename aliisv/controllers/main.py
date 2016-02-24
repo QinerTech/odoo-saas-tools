@@ -12,6 +12,9 @@ from werkzeug.wrappers import Request, Response
 from openerp.addons.saas_portal.controllers.main import SaasPortal
 import json
 
+import logging
+_logger = logging.getLogger(__name__)
+
 domain = 'qiner.com.cn'
 
 
@@ -25,23 +28,46 @@ class AliIsv(SaasPortal):
         query = urlparse.urlparse(url).query
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
-        product = request.env['product.template'].sudo().search([('aliskuid', '=', aliparams.get('skuId'))])
+        action = aliparams.get('action')
+        if action is None:
+            _logger.error('No action in URL: %s', url)
+            return False
+        elif action == 'createInstance':
+            values = self.createInstance(aliparams)
+        elif action == 'renewInstance':
+            values = self.renewInstance(aliparams)
+        elif action == 'expiredInstance':
+            values = self.expiredInstance(aliparams)
+        elif action == 'releaseInstance':
+            values = self.releaseInstance(aliparams)
+        elif action == 'bindDomain':
+            values = self.bindDomain(aliparams)
+
+        if not values:
+            _logger.error('No return values for action: %s', action)
+            return False
+
+        return values
+
+    def createInstance(self, param=None):
+        # param should be a diction
+        product = request.env['product.template'].sudo().search([('aliskuid', '=', param.get('skuId'))])
         if not product:
             #TODO: product not exists
-            return 0
+            return False
         plan = product.sudo().plan_id
 
-        ulogin = aliparams.get('email') or aliparams.get('aliUid') + '@' + domain
+        ulogin = param.get('email') or param.get('aliUid') + '@qiner.com.cn'
         upassword = '1'
 
-        user = request.env['res.users'].sudo().search([('aliuid', '=', aliparams.get('aliUid'))])
+        user = request.env['res.users'].sudo().search([('aliuid', '=', param.get('aliUid'))])
         if not user:
-           user = request.env['res.users'].sudo().create({'name':aliparams.get('aliUid'),
+           user = request.env['res.users'].sudo().create({'name':param.get('aliUid'),
                                                            'login': ulogin,
                                                            'password': upassword,
-                                                           'email': aliparams.get('email'),
-                                                           'mobile': aliparams.get('mobile'),
-                                                           'aliuid':aliparams.get('aliUid'),
+                                                           'email': param.get('email'),
+                                                           'mobile': param.get('mobile'),
+                                                           'aliuid':param.get('aliUid'),
                                                            'customer': True,
                                                               })
 
@@ -84,10 +110,6 @@ class AliIsv(SaasPortal):
 
         return values
 
-    def creatInstance(self, param=None):
-
-        return 0
-
     def renewInstance(self, param=None):
 
         return 0
@@ -107,7 +129,7 @@ class AliIsv(SaasPortal):
     def generate_login(self, param=None):
         #TODO: check existing user or not
         if param is not None:
-            login = param + '@' + domain
+            login = param + '@qiner.com.cn'
 
         return login
 
