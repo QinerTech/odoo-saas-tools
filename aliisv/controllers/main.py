@@ -14,6 +14,7 @@ from openerp.addons.saas_portal.controllers.main import SaasPortal
 import json
 import string
 import random
+import datetime
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -44,6 +45,8 @@ class AliIsv(SaasPortal):
             values = self.releaseInstance(aliparams)
         elif action == 'bindDomain':
             values = self.bindDomain(aliparams)
+        elif action == 'verify':
+            values = self.verify_aliisv(aliparams)
 
         if not values:
             _logger.error('No return values for action: %s', action)
@@ -52,35 +55,46 @@ class AliIsv(SaasPortal):
         return values
 
     def createInstance(self, param=None):
-        # param should be a diction
-        product = request.env['product.product'].sudo().search([('aliskuid', '=', param.get('skuId'))])
+        # param referece to ali API manual
+
+        aliUid = param.get('aliUid')
+        orderBizId = param.get('orderBizId')
+        orderId = param.get('orderId')
+        skuId = param.get('skuId')
+        accountQuantity = param.get('accountQuantity')
+        expiredOn = param.get('expiredOn')
+        email = param.get('email')
+        mobile = param.get('mobile')
+
+        login = email or aliUid + '@qiner.com.cn'
+        pwd = self.generate_password(symbols=False)
+
+        product = request.env['product.product'].sudo().search([('aliskuid', '=', skuId)])
         if not product:
-            _logger.error('No product with AliSkuId: %s', param.get('skuId'))
+            _logger.error('No product with AliSkuId: %s', skuId)
             return False
 
         plan = product.sudo().plan_id
 
-        login = param.get('email') or param.get('aliUid') + '@qiner.com.cn'
-        pwd = self.generate_password(symbols=False)
-
-        user = request.env['res.users'].sudo().search([('aliuid', '=', param.get('aliUid'))])
+        user = request.env['res.users'].sudo().search([('aliuid', '=', aliUid)])
         if not user:
-           user = request.env['res.users'].sudo().create({'name':param.get('aliUid'),
+           user = request.env['res.users'].sudo().create({'name': aliUid,
                                                         'login': login,
                                                         'password': pwd,
-                                                        'email': param.get('email'),
-                                                        'mobile': param.get('mobile'),
-                                                        'aliuid':param.get('aliUid'),
+                                                        'email': email,
+                                                        'mobile': mobile,
+                                                        'aliuid': aliUid,
                                                         'customer': True,
                                                         })
 
         partner_id = user.partner_id.id
         user_id = user.id
-        support_team = request.env.ref('saas_portal.main_support_team')
+        support_team_id = request.env.ref('saas_portal.main_support_team').id
 
         try:
 #            res = plan.create_new_database(dbname=dbname, user_id=user_id, partner_id=partner_id)
-            res = plan.create_new_database(user_id=user_id, partner_id=partner_id, password=pwd)
+            res = plan.create_new_database(user_id=user_id, partner_id=partner_id, password=pwd,
+                                           support_team_id=support_team_id)
         except MaximumDBException:
             url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumdb', '/')
             return werkzeug.utils.redirect(url)
@@ -92,9 +106,17 @@ class AliIsv(SaasPortal):
             _logger.error('create_new_database failed')
             return None
 
+        client_id = res.get('client_id')
+
+        if accountQuantity or expiredOn:
+            client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
+            client.max_users = accountQuantity
+            client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
+            client.send_params_to_client_db()
+
         hostname = urlparse.urlparse(res.get('url')).hostname
         values = json.dumps({
-                "instanceId": res.get('id'),
+                "instanceId": res.get('client_id'),
                 "hostInfo": {
                     "name": res.get('client_id'),
                     "ip": "127.0.0.1",
@@ -115,19 +137,33 @@ class AliIsv(SaasPortal):
 
     def renewInstance(self, param=None):
 
+        # client_id = res.get('client_id')
+        #
+        # if accountQuantity:
+        #     client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
+        #     client.max_users = accountQuantity
+        #     client.send_params_to_client_db()
+        #
+        # if expiredOn:
+        #     client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
+        #     client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
+        #     client.send_params_to_client_db()
+
         return 0
 
     def expiredInstance(self, param=None):
 
+
         return 0
 
     def releaseInstance(self, param=None):
-
         return 0
 
     def bindDomain(self, param=None):
-
         return 0
+
+    def verify_aliisv(self, param=None):
+        return False
 
     def generate_password(self, length=DEFAULT_LENGTH, capitals=True, numerals=True, symbols=True):
         """
