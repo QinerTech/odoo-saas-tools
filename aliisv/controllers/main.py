@@ -137,29 +137,44 @@ class AliIsv(SaasPortal):
 
     def renewInstance(self, param=None):
 
-        # client_id = res.get('client_id')
-        #
-        # if accountQuantity:
-        #     client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
-        #     client.max_users = accountQuantity
-        #     client.send_params_to_client_db()
-        #
-        # if expiredOn:
-        #     client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
-        #     client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
-        #     client.send_params_to_client_db()
+        client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
+        expiration_time_to_update = datetime.datetime.strptime(param.get('expiredOn'),'%Y-%m-%d %H:%M:%S')
+        client.expiration_datetime = expiration_time_to_update
 
-        return 0
+        # update database
+        client.send_params_to_client_db()
+
+        values = json.dumps({
+            "success": "True"
+        })
+
+        return values
 
     def expiredInstance(self, param=None):
+        client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
+        expired_datetime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        client.expiration_datetime = expired_datetime
 
+        client.send_params_to_client_db()
+        values = json.dumps({
+            "success": "True"
+        })
 
-        return 0
+        return values
 
     def releaseInstance(self, param=None):
-        return 0
+        client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
+        client.delete_database()
+        values = json.dumps({
+            "success": "True"
+        })
+
+        return values
+
+
 
     def bindDomain(self, param=None):
+
         return 0
 
     def verify_aliisv(self, param=None):
