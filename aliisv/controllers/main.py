@@ -110,8 +110,10 @@ class AliIsv(SaasPortal):
 
         if accountQuantity or expiredOn:
             client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
-            client.max_users = accountQuantity
-            client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
+            if accountQuantity:
+                client.max_users = accountQuantity
+            if expiredOn:
+                client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
             client.send_params_to_client_db()
 
         hostname = urlparse.urlparse(res.get('url')).hostname
