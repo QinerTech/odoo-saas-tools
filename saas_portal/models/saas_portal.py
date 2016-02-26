@@ -628,6 +628,7 @@ class SaasPortalClient(models.Model):
     def send_expiration_info_to_partner(self):
         for record in self:
             if record.expiration_datetime:
+                #TODO: need to check the error for format_tz function in template issue
                 template = self.env.ref('saas_portal.email_template_expiration_datetime_updated')
                 record.message_post_with_template(template.id, composition_mode='comment')
 

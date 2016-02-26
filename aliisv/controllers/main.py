@@ -20,6 +20,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 DEFAULT_LENGTH = 8
+_ISVKEY= 'example-key'
 
 class AliIsv(SaasPortal):
     @http.route('/aliisv', type='http', auth="public")
@@ -29,6 +30,11 @@ class AliIsv(SaasPortal):
 
 #        url = 'http://www.qiner.com.cn/?p1=1&p2=2&p3=3&token=xxxxxx'
         query = urlparse.urlparse(url).query
+        valid_url = self.validate_url(query)
+        if not valid_url:
+            _logger.info('Couldnot validate url: %s', url)
+            return False
+
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
         action = aliparams.get('action')
@@ -53,6 +59,19 @@ class AliIsv(SaasPortal):
             return False
 
         return values
+
+    def validate_url(self, url):
+        param = url.substring
+        token = ''
+        url = url + '&key=' + _ISVKEY
+        #”p1=1&p2=2&p3=3&key=isvkey”.toMD5(
+
+        md5 = url.toMD5()
+
+        if token <> md5:
+            return False
+
+        return True
 
     def createInstance(self, param=None):
         # param referece to ali API manual

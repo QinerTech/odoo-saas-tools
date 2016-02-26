@@ -27,7 +27,9 @@
             <field name="body_html"><![CDATA[
 
             <p>You expiration date is now: ${object.expiration_datetime}</p>
+            <!-- Gavin: 20160226, comment out due to error
             <p>${format_tz(object.expiration_datetime, tz=object.partner_id.tz, context={'lang':object.partner_id.lang})}</p>
+            -->
             ]]></field>
         </record>
 
