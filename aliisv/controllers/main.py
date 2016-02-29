@@ -32,10 +32,9 @@ class AliIsv(SaasPortal):
         query = urlparse.urlparse(url).query
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
-        print('hhhh')
-        valid_url = self.validate_url(query)
-        if not valid_url:
-            _logger.info('Couldnot validate url: %s', url)
+        is_valid = self.validate_url(query, aliparams.get('token').encode('utf-8'))
+        if not is_valid:
+            _logger.info('Could not validate url: %s', url)
             return False
 
         action = aliparams.get('action')
@@ -61,31 +60,23 @@ class AliIsv(SaasPortal):
 
         return values
 
-    def validate_url(self, query):
+    def validate_url(self, query, token):
 
-        d = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
-        token = d.get('token').encode('utf-8')
-
-        flag = query.index('token')
-        if flag == 0:
-            query = query[39:]
+        flag = query.find('&token')
+        if flag > 0:
+            param = query[:flag]
         else:
-            query = query[:flag] + query[flag+39:]
+            param = query[39:]
 
-        params = query.split('&')[0:-1]
-        QQ = params.sort()
-        # param = param.pop(index=-1)
-        param = '&'.join(params)
-
-        param = param.encode('utf-8') + '&key=' + _ISVKEY
-        # action=releaseInstance&instanceId=1234588&key=AsQbqR8QyreVJPAlbLzS8i6H07nNiACm0wxdSoJuFOfvBBPrjk5YYhtXAVHhfFbe
-        #   ”p1=1&p2=2&p3=3&key=isvkey”.toMD5()
+        full_url = param.encode('utf-8') + '&key=' + _ISVKEY
         m = hashlib.md5()
-        m.update(param)
-        hh = m.hexdigest()
+        m.update(full_url)
+        md5 = m.hexdigest()
 
-        if token == m.hexdigest():
+        if token == md5:
             return True
+        else:
+            return False
 
 
     def createInstance(self, param=None):
