@@ -15,27 +15,28 @@ import json
 import string
 import random
 import datetime
+import hashlib
+
 
 import logging
 _logger = logging.getLogger(__name__)
 
 DEFAULT_LENGTH = 8
-_ISVKEY= 'example-key'
+_ISVKEY= 'AsQbqR8QyreVJPAlbLzS8i6H07nNiACm0wxdSoJuFOfvBBPrjk5YYhtXAVHhfFbe'
 
 class AliIsv(SaasPortal):
     @http.route('/aliisv', type='http', auth="public")
     def get_url(self, **post):
         # get current request url
-        url = request.httprequest.url.decode('UTF-8')
-
-#        url = 'http://www.qiner.com.cn/?p1=1&p2=2&p3=3&token=xxxxxx'
+        url = request.httprequest.url.encode('utf-8')
         query = urlparse.urlparse(url).query
+        aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
+
+        print('hhhh')
         valid_url = self.validate_url(query)
         if not valid_url:
             _logger.info('Couldnot validate url: %s', url)
             return False
-
-        aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
         action = aliparams.get('action')
         if action is None:
@@ -60,18 +61,32 @@ class AliIsv(SaasPortal):
 
         return values
 
-    def validate_url(self, url):
-        param = url.substring
-        token = ''
-        url = url + '&key=' + _ISVKEY
-        #”p1=1&p2=2&p3=3&key=isvkey”.toMD5(
+    def validate_url(self, query):
 
-        md5 = url.toMD5()
+        d = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
+        token = d.get('token').encode('utf-8')
 
-        if token <> md5:
-            return False
+        flag = query.index('token')
+        if flag == 0:
+            query = query[39:]
+        else:
+            query = query[:flag] + query[flag+39:]
 
-        return True
+        params = query.split('&')[0:-1]
+        QQ = params.sort()
+        # param = param.pop(index=-1)
+        param = '&'.join(params)
+
+        param = param.encode('utf-8') + '&key=' + _ISVKEY
+        # action=releaseInstance&instanceId=1234588&key=AsQbqR8QyreVJPAlbLzS8i6H07nNiACm0wxdSoJuFOfvBBPrjk5YYhtXAVHhfFbe
+        #   ”p1=1&p2=2&p3=3&key=isvkey”.toMD5()
+        m = hashlib.md5()
+        m.update(param)
+        hh = m.hexdigest()
+
+        if token == m.hexdigest():
+            return True
+
 
     def createInstance(self, param=None):
         # param referece to ali API manual
@@ -185,7 +200,9 @@ class AliIsv(SaasPortal):
 
     def releaseInstance(self, param=None):
         client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
-        client.delete_database()
+        client.delete_expired_databases()
+
+        print('gg!')
         values = json.dumps({
             "success": "True"
         })
