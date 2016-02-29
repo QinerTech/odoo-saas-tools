@@ -34,7 +34,7 @@ class AliIsv(SaasPortal):
 
         is_valid = self.validate_url(query, aliparams.get('token').encode('utf-8'))
         if not is_valid:
-            _logger.info('Could not validate url: %s', url)
+            _logger.error('Could not validate url: %s', url)
             return False
 
         action = aliparams.get('action')
