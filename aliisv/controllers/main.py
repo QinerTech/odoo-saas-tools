@@ -31,16 +31,20 @@ class AliIsv(SaasPortal):
         url = request.httprequest.url.encode('utf-8')
         query = urlparse.urlparse(url).query
 
-        is_valid = self.validate_url(query)
-        if not is_valid:
-            _logger.error('Could not validate url: %s', url)
-            return False
+        json_false = json.dumps({
+                "instanceId": 0
+                })
 
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
+        is_valid = self.validate_url(aliparams)
+        if not is_valid:
+            _logger.error('Could not validate url: %s', url)
+            return json_false
+
         action = aliparams.get('action')
         if action is None:
             _logger.error('No action in URL: %s', url)
-            return False
+            return json_false
         elif action == 'createInstance':
             values = self.createInstance(aliparams)
         elif action == 'renewInstance':
@@ -58,20 +62,21 @@ class AliIsv(SaasPortal):
 
         if not values:
             _logger.error('No return values for action: %s', action)
-            return False
+            return json_false
 
         return values
 
-    def validate_url(self, query):
-        list = urlparse.parse_qsl(query)
+    def validate_url(self, params):
+        keys = params.keys()
+        keys.sort()
+
         new_url = ''
         token = ''
-
-        for i in list:
-            if i[0] == 'token':
-                token = i[1]
+        for i in keys:
+            if i == 'token':
+                token = params.get(i)
             else:
-                new_url += i[0] + '=' + i[1] + '&'
+                new_url += i + '=' + params.get(i) + '&'
 
         full_url = new_url + 'key=' + _ISVKEY
 
