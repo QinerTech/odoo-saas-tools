@@ -30,18 +30,13 @@ class AliIsv(SaasPortal):
         # get current request url
         url = request.httprequest.url.encode('utf-8')
         query = urlparse.urlparse(url).query
-        aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
-        token = aliparams.get('token')
-        if not token:
-            _logger.error('Could not find token in URL: %s', url)
-            return False
-
-        is_valid = self.validate_url(query, token.encode('utf-8'))
+        is_valid = self.validate_url(query)
         if not is_valid:
             _logger.error('Could not validate url: %s', url)
             return False
 
+        aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
         action = aliparams.get('action')
         if action is None:
             _logger.error('No action in URL: %s', url)
@@ -58,6 +53,8 @@ class AliIsv(SaasPortal):
             values = self.bindDomain(aliparams)
         elif action == 'verify':
             values = self.verify_aliisv(aliparams)
+        else:
+            values = None
 
         if not values:
             _logger.error('No return values for action: %s', action)
@@ -65,15 +62,19 @@ class AliIsv(SaasPortal):
 
         return values
 
-    def validate_url(self, query, token):
+    def validate_url(self, query):
+        list = urlparse.parse_qsl(query)
+        new_url = ''
+        token = ''
 
-        flag = query.find('&token')
-        if flag > 0:
-            param = query[:flag]
-        else:
-            param = query[39:]
+        for i in list:
+            if i[0] == 'token':
+                token = i[1]
+            else:
+                new_url += i[0] + '=' + i[1] + '&'
 
-        full_url = param.encode('utf-8') + '&key=' + _ISVKEY
+        full_url = new_url + 'key=' + _ISVKEY
+
         m = hashlib.md5()
         m.update(full_url)
         md5 = m.hexdigest()
