@@ -32,7 +32,12 @@ class AliIsv(SaasPortal):
         query = urlparse.urlparse(url).query
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
 
-        is_valid = self.validate_url(query, aliparams.get('token').encode('utf-8'))
+        token = aliparams.get('token')
+        if not token:
+            _logger.error('Could not find token in URL: %s', url)
+            return False
+
+        is_valid = self.validate_url(query, token.encode('utf-8'))
         if not is_valid:
             _logger.error('Could not validate url: %s', url)
             return False
@@ -193,7 +198,6 @@ class AliIsv(SaasPortal):
         client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
         client.delete_expired_databases()
 
-        print('gg!')
         values = json.dumps({
             "success": "True"
         })
