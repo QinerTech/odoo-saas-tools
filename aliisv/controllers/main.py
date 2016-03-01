@@ -31,20 +31,16 @@ class AliIsv(SaasPortal):
         url = request.httprequest.url.encode('utf-8')
         query = urlparse.urlparse(url).query
 
-        json_false = json.dumps({
-                "instanceId": 0
-                })
-
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
         is_valid = self.validate_url(aliparams)
         if not is_valid:
             _logger.error('Could not validate url: %s', url)
-            return json_false
+            return json.dumps({"instanceId": 0})
 
         action = aliparams.get('action')
         if action is None:
             _logger.error('No action in URL: %s', url)
-            return json_false
+            return json.dumps({"instanceId": 0})
         elif action == 'createInstance':
             values = self.createInstance(aliparams)
         elif action == 'renewInstance':
@@ -62,24 +58,22 @@ class AliIsv(SaasPortal):
 
         if not values:
             _logger.error('No return values for action: %s', action)
-            return json_false
+            return json.dumps({"instanceId": 0})
 
         return values
 
     def validate_url(self, params):
         keys = params.keys()
-        keys.sort()
-
         new_url = ''
         token = ''
+
+        keys.sort()
         for i in keys:
             if i == 'token':
                 token = params.get(i)
             else:
                 new_url += i + '=' + params.get(i) + '&'
-
         full_url = new_url + 'key=' + _ISVKEY
-
         m = hashlib.md5()
         m.update(full_url)
         md5 = m.hexdigest()
@@ -104,14 +98,12 @@ class AliIsv(SaasPortal):
 
         login = email or aliUid + '@qiner.com.cn'
         pwd = self.generate_password(symbols=False)
-
         product = request.env['product.product'].sudo().search([('aliskuid', '=', skuId)])
         if not product:
             _logger.error('No product with AliSkuId: %s', skuId)
             return False
 
         plan = product.sudo().plan_id
-
         user = request.env['res.users'].sudo().search([('aliuid', '=', aliUid)])
         if not user:
            user = request.env['res.users'].sudo().create({'name': aliUid,
@@ -143,7 +135,6 @@ class AliIsv(SaasPortal):
             return None
 
         client_id = res.get('client_id')
-
         if accountQuantity or expiredOn:
             client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
             if accountQuantity:
@@ -155,19 +146,14 @@ class AliIsv(SaasPortal):
         hostname = urlparse.urlparse(res.get('url')).hostname
         values = json.dumps({
                 "instanceId": res.get('client_id'),
-                "hostInfo": {
-                    "name": res.get('client_id'),
-                    "ip": "127.0.0.1",
-                    "password": "root_password"
-                },
                 "appInfo": {
                     "frontEndUrl": 'http://' + hostname,
-                    "adminUrl": "http://www.qiner.com.cn/",
+                    "adminUrl": "http://www.qiner.com.cn/web/login",
                     "username": login,
                     "password": pwd,
                 },
                 "info": {
-                    "key1": "my custom info"
+                    "key1": "欢迎使用我们的产品,感谢您的信任!"
                 }
             })
 
