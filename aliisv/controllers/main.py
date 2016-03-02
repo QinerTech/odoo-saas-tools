@@ -77,7 +77,6 @@ class AliIsv(SaasPortal):
         m = hashlib.md5()
         m.update(full_url)
         md5 = m.hexdigest()
-
         if token == md5:
             return True
         else:
@@ -86,7 +85,6 @@ class AliIsv(SaasPortal):
 
     def createInstance(self, param=None):
         # param referece to ali API manual
-
         aliUid = param.get('aliUid')
         orderBizId = param.get('orderBizId')
         orderId = param.get('orderId')
@@ -103,7 +101,10 @@ class AliIsv(SaasPortal):
             _logger.error('No product with AliSkuId: %s', skuId)
             return False
 
+        attribute_value_obj = product.attribute_value_ids.filtered(lambda r: r.attribute_id.saas_code == 'MAX_USERS')
+        max_user = attribute_value_obj and int(attribute_value_obj[0].saas_code_value) or 0
         plan = product.sudo().plan_id
+        plan.max_users = max_user
         user = request.env['res.users'].sudo().search([('aliuid', '=', aliUid)])
         if not user:
            user = request.env['res.users'].sudo().create({'name': aliUid,
@@ -137,7 +138,7 @@ class AliIsv(SaasPortal):
         client_id = res.get('client_id')
         if accountQuantity or expiredOn:
             client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
-            if accountQuantity:
+            if int(accountQuantity) > 1:
                 client.max_users = accountQuantity
             if expiredOn:
                 client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
