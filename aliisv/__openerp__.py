@@ -15,7 +15,9 @@
         'sale', 'saas_portal_sale'
     ],
     'data': [
-        'views/product_template.xml'
+        'views/product_template.xml',
+        'views/saas_portal.xml',
+        'views/res_users.xml'
     ],
 
     'test': [

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+      <record id="view_clients_form" model="ir.ui.view">
+            <field name="name">saas_portal.client.form</field>
+            <field name="model">saas_portal.client</field>
+            <field name="inherit_id" ref="saas_portal_sale.view_clients_form"/>
+            <field name="arch" type="xml">
+                <data>
+                    <xpath expr="//group[@name='subscription']/field[@name='expiration_datetime']" position="after">
+                        <field name="ali_orderbizid"/>
+                    </xpath>
+                    <xpath expr="/form/sheet/notebook/page/field[@name='invoice_lines']/tree/field[@name='create_date']" position="before">
+                        <field name="ali_orderid"/>
+                    </xpath>
+                </data>
+            </field>
+        </record>
+
+    </data>
+</openerp>

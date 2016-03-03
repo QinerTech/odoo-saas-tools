@@ -6,7 +6,7 @@ from openerp import models, fields
 class ResUsersAliIsv(models.Model):
     _inherit = 'res.users'
 
-    aliuid = fields.Char(
+    ali_uid = fields.Char(
         string = 'Aliyun Uid',
         required = False,
         index = False,

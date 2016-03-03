@@ -85,45 +85,53 @@ class AliIsv(SaasPortal):
 
     def createInstance(self, param=None):
         # param referece to ali API manual
-        aliUid = param.get('aliUid')
-        orderBizId = param.get('orderBizId')
-        orderId = param.get('orderId')
-        skuId = param.get('skuId')
-        accountQuantity = param.get('accountQuantity')
-        expiredOn = param.get('expiredOn')
+        ali_uid = param.get('aliUid')
+        ali_orderbizid = param.get('orderBizId')
+        ali_orderid = param.get('orderId')
+        ali_skuid = param.get('skuId')
+        ali_accountquantity = param.get('accountQuantity')
+        ali_expiredon = param.get('expiredOn')
         email = param.get('email')
         mobile = param.get('mobile')
 
-        login = email or aliUid + '@qiner.com.cn'
+        client = request.env['saas_portal.client'].sudo().search([('ali_orderbizid', '=', ali_orderbizid)])
+        if client:
+            return json.dumps({"instanceId": 0})
+        # else:
+        #     vals = {'expiration_datetime': datetime.datetime.strptime(ali_expiredon,'%Y-%m-%d %H:%M:%S'),
+        #             'max_user': ali_accountquantity,
+        #         }
+        #     client = request.env['saas_portal.client'].create()
+
+        login = email or ali_uid + '@qiner.com.cn'
         pwd = self.generate_password(symbols=False)
-        product = request.env['product.product'].sudo().search([('aliskuid', '=', skuId)])
+        product = request.env['product.product'].sudo().search([('ali_skuid', '=', ali_skuid)])
         if not product:
-            _logger.error('No product with AliSkuId: %s', skuId)
+            _logger.error('No product with AliSkuId: %s', ali_skuid)
             return False
 
         attribute_value_obj = product.attribute_value_ids.filtered(lambda r: r.attribute_id.saas_code == 'MAX_USERS')
         max_user = attribute_value_obj and int(attribute_value_obj[0].saas_code_value) or 0
         plan = product.sudo().plan_id
         plan.max_users = max_user
-        user = request.env['res.users'].sudo().search([('aliuid', '=', aliUid)])
+        user = request.env['res.users'].sudo().search([('ali_uid', '=', ali_uid)])
         if not user:
-           user = request.env['res.users'].sudo().create({'name': aliUid,
+           user = request.env['res.users'].sudo().create({'name': ali_uid,
                                                         'login': login,
                                                         'password': pwd,
                                                         'email': email,
                                                         'mobile': mobile,
-                                                        'aliuid': aliUid,
+                                                        'ali_uid': ali_uid,
                                                         'customer': True,
                                                         })
 
         partner_id = user.partner_id.id
         user_id = user.id
         support_team_id = request.env.ref('saas_portal.main_support_team').id
-
         try:
 #            res = plan.create_new_database(dbname=dbname, user_id=user_id, partner_id=partner_id)
-            res = plan.create_new_database(user_id=user_id, partner_id=partner_id, password=pwd,
-                                           support_team_id=support_team_id)
+            res = plan.create_new_database(user_id=user_id, client_id=client.id, partner_id=partner_id,
+                                           support_team_id=support_team_id, password=pwd, ali_orderbizid=ali_orderbizid)
         except MaximumDBException:
             url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumdb', '/')
             return werkzeug.utils.redirect(url)
@@ -136,12 +144,20 @@ class AliIsv(SaasPortal):
             return None
 
         client_id = res.get('client_id')
-        if accountQuantity or expiredOn:
+        #TODO: To add ali oder info as invoice lines
+        # vals = {
+        #     'saas_portal_client_id':client_id,
+        #     'product_id': product.id,
+        #     'plan_id': plan.id,
+        #     'ali_orderid': ali_orderid,
+        # }
+        # request.env['account.invoice.line'].create(vals)
+        if ali_accountquantity or ali_expiredon:
             client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
-            if int(accountQuantity) > 1:
-                client.max_users = accountQuantity
-            if expiredOn:
-                client.expiration_datetime = datetime.datetime.strptime(expiredOn,'%Y-%m-%d %H:%M:%S')
+            if int(ali_accountquantity) > 1:
+                client.max_users = ali_accountquantity
+            if ali_expiredon:
+                client.expiration_datetime = datetime.datetime.strptime(ali_expiredon,'%Y-%m-%d %H:%M:%S')
             client.send_params_to_client_db()
 
         hostname = urlparse.urlparse(res.get('url')).hostname

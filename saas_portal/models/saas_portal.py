@@ -191,7 +191,8 @@ class SaasPortalPlan(models.Model):
         return self._create_new_database(**kwargs)
 
     @api.multi
-    def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False, trial=False, support_team_id=None, async=None, password=None):
+    def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False,
+                             trial=False, support_team_id=None, async=None, password=None, ali_orderbizid=None):
         self.ensure_one()
 
         server = self.server_id
@@ -224,6 +225,7 @@ class SaasPortalPlan(models.Model):
                 'partner_id': partner_id,
                 'trial': trial,
                 'support_team_id': support_team_id,
+                'ali_orderbizid': ali_orderbizid,
                 }
         client = None
         if client_id:
