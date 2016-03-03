@@ -3,13 +3,13 @@
     <data>
          <!-- Update user form !-->
         <record model="ir.ui.view" id="res_user_form_saas_inherit_ali">
-            <field name="name">Users Preferences</field>
+            <field name="name">res.users.preferences.form</field>
             <field name="model">res.users</field>
             <field name="inherit_id" ref="saas_portal.res_user_form_saas"/>
             <field name="arch" type="xml">
                 <data>
                     <xpath expr="//field[@name='support_team_id']" position="after">
-                        <field name="ali_uid"/>
+                        <field name="aliuid"/>
                     </xpath>
                 </data>
             </field>

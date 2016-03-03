@@ -85,7 +85,7 @@ class AliIsv(SaasPortal):
 
     def createInstance(self, param=None):
         # param referece to ali API manual
-        ali_uid = param.get('aliUid')
+        aliuid = param.get('aliUid')
         ali_orderbizid = param.get('orderBizId')
         ali_orderid = param.get('orderId')
         ali_skuid = param.get('skuId')
@@ -103,7 +103,7 @@ class AliIsv(SaasPortal):
         #         }
         #     client = request.env['saas_portal.client'].create()
 
-        login = email or ali_uid + '@qiner.com.cn'
+        login = email or aliuid + '@qiner.com.cn'
         pwd = self.generate_password(symbols=False)
         product = request.env['product.product'].sudo().search([('ali_skuid', '=', ali_skuid)])
         if not product:
@@ -114,14 +114,14 @@ class AliIsv(SaasPortal):
         max_user = attribute_value_obj and int(attribute_value_obj[0].saas_code_value) or 0
         plan = product.sudo().plan_id
         plan.max_users = max_user
-        user = request.env['res.users'].sudo().search([('ali_uid', '=', ali_uid)])
+        user = request.env['res.users'].sudo().search([('aliuid', '=', aliuid)])
         if not user:
-           user = request.env['res.users'].sudo().create({'name': ali_uid,
+           user = request.env['res.users'].sudo().create({'name': aliuid,
                                                         'login': login,
                                                         'password': pwd,
                                                         'email': email,
                                                         'mobile': mobile,
-                                                        'ali_uid': ali_uid,
+                                                        'aliuid': aliuid,
                                                         'customer': True,
                                                         })
 
