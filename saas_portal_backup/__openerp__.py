@@ -1,15 +1,14 @@
+# -*- coding: utf-8 -*-
 {
-    'name': 'SaaS Sysadmin backup',
-    'summary': "System Administration Backup Framework for SAAS Tools",
+    'name': 'SaaS Portal backup',
     'version': '1.0.0',
     'author': 'Salton Massally <smassally@idtlabs.sl> (iDT Labs)',
-    'license': 'LGPL-3',
+    'license': 'GPL-3',
     'category': 'SaaS',
     'website': 'idtlabs.sl',
-    'depends': ['saas_sysadmin'],
+    'depends': ['saas_portal'],
     'data': [
         'views/saas_portal_views.xml',
-        'views/wizard.xml'
         ],
     'installable': True,
 }
