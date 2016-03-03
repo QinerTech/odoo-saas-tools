@@ -91,8 +91,8 @@ class AliIsv(SaasPortal):
         ali_skuid = param.get('skuId')
         ali_accountquantity = param.get('accountQuantity')
         ali_expiredon = param.get('expiredOn')
-        email = param.get('email')
-        mobile = param.get('mobile')
+        ali_email = param.get('email')
+        ali_mobile = param.get('mobile')
 
         client = request.env['saas_portal.client'].sudo().search([('ali_orderbizid', '=', ali_orderbizid)])
         if client:
@@ -119,8 +119,8 @@ class AliIsv(SaasPortal):
            user = request.env['res.users'].sudo().create({'name': aliuid,
                                                         'login': login,
                                                         'password': pwd,
-                                                        'email': email,
-                                                        'mobile': mobile,
+                                                        'email': ali_email,
+                                                        'mobile': ali_mobile,
                                                         'aliuid': aliuid,
                                                         'customer': True,
                                                         })
