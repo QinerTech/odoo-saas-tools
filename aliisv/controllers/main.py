@@ -34,12 +34,12 @@ class AliIsv(SaasPortal):
         aliparams = dict([(k, v[0]) for k, v in urlparse.parse_qs(query).items()])
         is_valid = self.validate_url(aliparams)
         if not is_valid:
-            _logger.error('Could not validate url: %s', url)
+            _logger.error('aliisv: Could not validate url: %s', url)
             return json.dumps({"instanceId": 0})
 
         action = aliparams.get('action')
         if action is None:
-            _logger.error('No action in URL: %s', url)
+            _logger.error('aliisv: No action in URL: %s', url)
             return json.dumps({"instanceId": 0})
         elif action == 'createInstance':
             values = self.createInstance(aliparams)
@@ -57,7 +57,7 @@ class AliIsv(SaasPortal):
             values = None
 
         if not values:
-            _logger.error('No return values for action: %s', action)
+            _logger.error('aliisv: No return values for action: %s', action)
             return json.dumps({"instanceId": 0})
 
         return values
@@ -105,7 +105,7 @@ class AliIsv(SaasPortal):
         pwd = self.generate_password(symbols=False)
         product = request.env['product.product'].sudo().search([('ali_skuid', '=', ali_skuid)])
         if not product:
-            _logger.error('No product with AliSkuId: %s', ali_skuid)
+            _logger.error('aliisv: No product with AliSkuId: %s', ali_skuid)
             return False
 
         attribute_value_obj = product.attribute_value_ids.filtered(lambda r: r.attribute_id.saas_code == 'MAX_USERS')
@@ -128,8 +128,8 @@ class AliIsv(SaasPortal):
         support_team_id = request.env.ref('saas_portal.main_support_team').id
         try:
 #            res = plan.create_new_database(dbname=dbname, user_id=user_id, partner_id=partner_id)
-            res = plan.create_new_database(user_id=user_id, client_id=client.id, partner_id=partner_id,
-                                           support_team_id=support_team_id, password=pwd, ali_orderbizid=ali_orderbizid)
+            res = plan.create_new_database(user_id=user_id, partner_id=partner_id, support_team_id=support_team_id,
+                                           password=pwd, ali_orderbizid=ali_orderbizid)
         except MaximumDBException:
             url = request.env['ir.config_parameter'].sudo().get_param('saas_portal.page_for_maximumdb', '/')
             return werkzeug.utils.redirect(url)
@@ -138,10 +138,11 @@ class AliIsv(SaasPortal):
             return werkzeug.utils.redirect(url)
 
         if not res:
-            _logger.error('create_new_database failed')
+            _logger.error('aliisv: create_new_database failed')
             return None
 
         client_id = res.get('client_id')
+        client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
         #TODO: To add ali oder info as invoice lines
         # vals = {
         #     'saas_portal_client_id':client_id,
@@ -151,7 +152,6 @@ class AliIsv(SaasPortal):
         # }
         # request.env['account.invoice.line'].create(vals)
         if ali_accountquantity or ali_expiredon:
-            client = request.env['saas_portal.client'].sudo().search([('client_id', '=', client_id)])
             if int(ali_accountquantity) > 1:
                 client.max_users = ali_accountquantity
             if ali_expiredon:
