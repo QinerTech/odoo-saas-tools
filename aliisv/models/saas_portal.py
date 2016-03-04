@@ -14,6 +14,29 @@ class SaasPortalClient(models.Model):
         size=50,
         default=None
     )
+    ali_action = fields.Char(
+        string='Ali Action',
+        required=False,
+        index=False,
+        size=50,
+        default=None,
+        readonly=True
+    )
+    ali_date = fields.Datetime(
+        string='Ali Action Time',
+        required=False,
+        index=False,
+        size=50,
+        default=None,
+        readonly=True
+    )
+    ali_json = fields.Text(
+        string='Json Response',
+        required=False,
+        index=False,
+        default=None,
+        readonly=True
+    )
 
 class AccountInvoiceLine(models.Model):
     _inherit = 'account.invoice.line'

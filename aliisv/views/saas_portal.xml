@@ -7,8 +7,11 @@
             <field name="inherit_id" ref="saas_portal_sale.view_clients_form"/>
             <field name="arch" type="xml">
                 <data>
-                    <xpath expr="//group[@name='subscription']/field[@name='expiration_datetime']" position="after">
+                    <xpath expr="//group[@name='subscription']/field[@name='expired']" position="after">
                         <field name="ali_orderbizid"/>
+                        <field name="ali_action"/>
+                        <field name="ali_date"/>
+                        <field name="ali_json"/>
                     </xpath>
                     <xpath expr="/form/sheet/notebook/page/field[@name='invoice_lines']/tree/field[@name='create_date']" position="before">
                         <field name="ali_orderid"/>

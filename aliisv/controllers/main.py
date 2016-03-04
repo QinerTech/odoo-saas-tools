@@ -26,7 +26,7 @@ _ISVKEY= 'AsQbqR8QyreVJPAlbLzS8i6H07nNiACm0wxdSoJuFOfvBBPrjk5YYhtXAVHhfFbe'
 
 class AliIsv(SaasPortal):
     @http.route('/aliisv', type='http', auth="public")
-    def get_url(self, **post):
+    def ali_action(self, **post):
         # get current request url
         url = request.httprequest.url.encode('utf-8')
         query = urlparse.urlparse(url).query
@@ -96,14 +96,12 @@ class AliIsv(SaasPortal):
 
         client = request.env['saas_portal.client'].sudo().search([('ali_orderbizid', '=', ali_orderbizid)])
         if client:
-            return json.dumps({"instanceId": 0})
-        # else:
-        #     vals = {'expiration_datetime': datetime.datetime.strptime(ali_expiredon,'%Y-%m-%d %H:%M:%S'),
-        #             'max_user': ali_accountquantity,
-        #         }
-        #     client = request.env['saas_portal.client'].create()
+            if client.ali_action == 'createInstance':
+                return json.dumps(client.ali_json)
+            else:
+                return json.dumps({"instanceId": 0})
 
-        login = email or aliuid + '@qiner.com.cn'
+        login = ali_email or aliuid + '@qiner.com.cn'
         pwd = self.generate_password(symbols=False)
         product = request.env['product.product'].sudo().search([('ali_skuid', '=', ali_skuid)])
         if not product:
@@ -173,7 +171,10 @@ class AliIsv(SaasPortal):
                     "key1": "欢迎使用我们的产品,感谢您的信任!"
                 }
             })
-
+        #Gavin: update the action complete info to client record for later checking
+        client.write({'ali_action': 'createInstance',
+                      'ali_date': datetime.datetime.now(),
+                      'ali_json': values})
         return values
 
     def renewInstance(self, param=None):
@@ -189,6 +190,10 @@ class AliIsv(SaasPortal):
             "success": "True"
         })
 
+        #Gavin: update the action complete info to client record for later checking
+        client.write({'ali_action': 'renewInstance',
+                      'ali_date': datetime.datetime.now(),
+                      'ali_json': values})
         return values
 
     def expiredInstance(self, param=None):
@@ -201,6 +206,10 @@ class AliIsv(SaasPortal):
             "success": "True"
         })
 
+        #Gavin: update the action complete info to client record for later checking
+        client.write({'ali_action': 'expiredInstance',
+                      'ali_date': datetime.datetime.now(),
+                      'ali_json': values})
         return values
 
     def releaseInstance(self, param=None):
@@ -211,16 +220,21 @@ class AliIsv(SaasPortal):
             "success": "True"
         })
 
+        #Gavin: update the action complete info to client record for later checking
+        client.write({'ali_action': 'releaseInstance',
+                      'ali_date': datetime.datetime.now(),
+                      'ali_json': values})
         return values
 
-
-
     def bindDomain(self, param=None):
-
-        return 0
+        return json.dumps({
+            "success": "True"
+        })
 
     def verify_aliisv(self, param=None):
-        return False
+        return json.dumps({
+            "success": "True"
+        })
 
     def generate_password(self, length=DEFAULT_LENGTH, capitals=True, numerals=True, symbols=True):
         """
