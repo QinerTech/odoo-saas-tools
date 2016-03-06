@@ -122,6 +122,8 @@ class AliIsv(SaasPortal):
                                                         'aliuid': aliuid,
                                                         'customer': True,
                                                         })
+        else:
+            login = user.login
 
         partner_id = user.partner_id.id
         user_id = user.id
