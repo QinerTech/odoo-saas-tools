@@ -97,7 +97,7 @@ class AliIsv(SaasPortal):
         client = request.env['saas_portal.client'].sudo().search([('ali_orderbizid', '=', ali_orderbizid)])
         if client:
             if client.ali_action == 'createInstance':
-                return json.dumps(client.ali_json)
+                return client.ali_json
             else:
                 return json.dumps({"instanceId": 0})
 
