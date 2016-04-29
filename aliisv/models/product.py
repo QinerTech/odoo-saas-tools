@@ -6,8 +6,8 @@ from openerp import models, fields
 class ProductTemplateAliIsv(models.Model):
     _inherit = 'product.product'
 
-    aliskuid = fields.Char(
-        string = 'Aliyun SKU Id',
+    ali_skuid = fields.Char(
+        string = 'Ali skuId',
         required = False,
         index = False,
         size = 50,

@@ -191,7 +191,8 @@ class SaasPortalPlan(models.Model):
         return self._create_new_database(**kwargs)
 
     @api.multi
-    def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False, trial=False, support_team_id=None, async=None, password=None):
+    def _create_new_database(self, dbname=None, client_id=None, partner_id=None, user_id=None, notify_user=False,
+                             trial=False, support_team_id=None, async=None, password=None, ali_orderbizid=None):
         self.ensure_one()
 
         server = self.server_id
@@ -224,6 +225,7 @@ class SaasPortalPlan(models.Model):
                 'partner_id': partner_id,
                 'trial': trial,
                 'support_team_id': support_team_id,
+                'ali_orderbizid': ali_orderbizid,
                 }
         client = None
         if client_id:
@@ -347,7 +349,7 @@ class SaasPortalPlan(models.Model):
 
     @api.multi
     def upgrade_template(self):
-        return self[0].template_id.upgrade_database()
+        return self[0].template_id.show_upgrade_wizard()
 
     @api.multi
     def delete_template(self):
@@ -394,6 +396,29 @@ class SaasPortalDatabase(models.Model):
                           ],
                              'State', default='draft', track_visibility='onchange')
 
+    @api.multi
+    def _backup(self):
+        '''
+        call to backup database
+        '''
+        self.ensure_one()
+
+        state = {
+            'd': self.name,
+            'client_id': self.client_id,
+        }
+
+        url = self.server_id._request_server(path='/saas_server/backup_database', state=state, client_id=self.client_id)[0]
+        res = requests.get(url, verify=(self.server_id.request_scheme == 'https' and self.server_id.verify_ssl))
+        _logger.info('backup database: %s', res.text)
+        if res.ok != True:
+            raise Warning('Reason: %s \n Message: %s' % (res.reason, res.content))
+        data = simplejson.loads(res.text)
+        if data['status'] != 'success':
+            warning = data[0].get('message', 'Could not backup database; please check your logs')
+            raise Warning(warning)
+        return True
+
     @api.one
     def action_sync_server(self):
         self.server_id.action_sync_server()
@@ -419,11 +444,25 @@ class SaasPortalDatabase(models.Model):
 
     @api.multi
     def edit_database(self):
-        return self._request('/saas_server/edit_database')
+        for database_obj in self:
+            return database_obj._request('/saas_server/edit_database')
 
     @api.multi
     def delete_database(self):
-        return self._request('/saas_server/delete_database')
+        for database_obj in self:
+            return database_obj._request('/saas_server/delete_database')
+
+    @api.multi
+    def upgrade(self, payload=None):
+        config_obj = self.env['saas.config']
+        res = []
+
+        if payload != None:
+            # maybe use multiprocessing here
+            for database_obj in self:
+                res.append(config_obj.do_upgrade_database(payload.copy(), database_obj.id))
+        return res
+
 
     @api.one
     def delete_database_server(self, **kwargs):
@@ -444,7 +483,7 @@ class SaasPortalDatabase(models.Model):
             self.state = 'deleted'
 
     @api.multi
-    def upgrade_database(self):
+    def show_upgrade_wizard(self):
         obj = self[0]
         return {
             'type': 'ir.actions.act_window',
