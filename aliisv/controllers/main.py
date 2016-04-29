@@ -22,7 +22,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 DEFAULT_LENGTH = 8
-_ISVKEY= 'AsQbqR8QyreVJPAlbLzS8i6H07nNiACm0wxdSoJuFOfvBBPrjk5YYhtXAVHhfFbe'
+_ISVKEY= '...'
 
 class AliIsv(SaasPortal):
     @http.route('/aliisv', type='http', auth="public")
@@ -165,7 +165,7 @@ class AliIsv(SaasPortal):
                 "instanceId": res.get('client_id'),
                 "appInfo": {
                     "frontEndUrl": 'http://' + hostname,
-                    "adminUrl": "http://www.qiner.com.cn/web/login",
+                    "adminUrl": 'http://' + hostname,
                     "username": login,
                     "password": pwd,
                 },
