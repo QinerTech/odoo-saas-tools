@@ -215,17 +215,18 @@ class AliIsv(SaasPortal):
         return values
 
     def releaseInstance(self, param=None):
-        client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
-        client.delete_expired_databases()
+        # Comment out: Rely on Saas server to release the instance
+        #client = request.env['saas_portal.client'].sudo().search([('client_id', '=', param.get('instanceId'))])
+        #client.delete_expired_databases()
 
         values = json.dumps({
             "success": "True"
         })
 
         #Gavin: update the action complete info to client record for later checking
-        client.write({'ali_action': 'releaseInstance',
-                      'ali_date': datetime.datetime.now(),
-                      'ali_json': values})
+        #client.write({'ali_action': 'releaseInstance',
+        #              'ali_date': datetime.datetime.now(),
+        #              'ali_json': values})
         return values
 
     def bindDomain(self, param=None):
